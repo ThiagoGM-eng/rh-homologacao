@@ -1,0 +1,932 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Ambimet</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* Página PÚBLICA do módulo rh (prompt §4: arquivo separado do rh/index.html
+   para quem não tem login não baixar o código interno e para ser leve no
+   celular). Paleta do Guia rev. 10, §1.2 — mesmos tokens do sistema. */
+:root{
+  --azul:      #0b0047;
+  --azul-esc:  #060030;
+  --royal:     #2264dc;
+  --cobalto:   #5a8cff;
+  --aqua:      #01b4d4;
+  --verde:     #1a9c66;
+  --verm:      #d9403a;
+  --lar:       #e8912d;
+  --texto:     #25303c;
+  --cinza:     #f4f6f9;
+  --borda:     #dde3ea;
+  --cinza-txt: #6b7684;
+  --branco:      #ffffff;
+  --verde-fundo: #e2f5ec; --verde-txt: #0f6b45;
+  --lar-fundo:   #fdf1de; --lar-txt:   #8a5a00;
+  --verm-fundo:  #fbe9e7; --verm-txt:  #a5352a;
+  --azul-fundo:  #e9edfb; --azul-txt:  #1a54c0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:var(--texto);background:var(--cinza);font-size:15px}
+.hide{display:none!important}
+.top{background:linear-gradient(90deg,var(--azul),var(--azul-esc));color:var(--branco);padding:14px 16px;text-align:center}
+.top{display:flex;align-items:center;justify-content:center;gap:12px}
+.top .marca img{height:28px;width:auto;display:block}
+.top .risco{width:1px;height:22px;background:var(--cobalto);opacity:.5}
+.top b{font-size:17px}.top b span{color:var(--aqua)}
+main{max-width:720px;margin:16px auto;padding:0 14px}
+.card{background:var(--branco);border:1px solid var(--borda);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+h2,h3{color:var(--azul);margin:.2em 0}h2{font-size:19px}h3{font-size:15px}
+.mut{color:var(--cinza-txt);font-size:13px}
+label{font-size:13px;font-weight:600;color:var(--cinza-txt);display:block;margin:12px 0 4px}
+input,textarea{font-family:inherit;padding:11px 12px;border:1px solid var(--borda);border-radius:8px;width:100%;font-size:16px;background:var(--branco);color:var(--texto)}
+textarea{min-height:80px;resize:vertical}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:8px;padding:12px 16px;font-weight:600;font-size:15px}
+.btn{background:var(--royal);color:var(--branco);width:100%}
+.btn-sec{background:var(--branco);color:var(--royal);border:1px solid var(--borda)}
+.msg{padding:11px 14px;border-radius:8px;margin:10px 0}
+.msg-ok{background:var(--verde-fundo);color:var(--verde-txt)}
+.msg-erro{background:var(--verm-fundo);color:var(--verm-txt)}
+.msg-aviso{background:var(--lar-fundo);color:var(--lar-txt)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap}
+.b-erro{background:var(--verm-fundo);color:var(--verm-txt)}
+.pf-falta{border:2px solid var(--verm);background:var(--verm-fundo)}
+.b-info{background:var(--azul-fundo);color:var(--azul-txt)}
+.b-ok{background:var(--verde-fundo);color:var(--verde-txt)}
+.b-aten{background:var(--lar-fundo);color:var(--lar-txt)}
+.msg-info{background:var(--azul-fundo);color:var(--azul-txt)}
+/* admissão: passos, documentos em cartão, revisão */
+.barra{height:8px;background:var(--cinza);border-radius:6px;overflow:hidden;margin:6px 0 10px}
+.barra span{display:block;height:8px;background:var(--verde);border-radius:6px}
+.passos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media(max-width:560px){.passos{grid-template-columns:1fr 1fr}}
+.passo{background:var(--branco);border:1px solid var(--borda);color:var(--texto);border-radius:10px;padding:8px 10px;display:flex;gap:8px;align-items:center;text-align:left;font-weight:600;font-size:13.5px}
+.passo small{display:block;font-weight:400;color:var(--cinza-txt);font-size:11.5px}
+.passo .num{width:24px;height:24px;border-radius:50%;background:var(--cinza);display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+.passo.feito .num{background:var(--verde-fundo);color:var(--verde-txt)}
+.passo.on{border-color:var(--royal);box-shadow:0 0 0 2px var(--azul-fundo)}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 10px}
+.fld label{margin-top:10px}
+.campo-sel{width:100%;padding:11px;border:1px solid var(--borda);border-radius:8px;font-size:16px;background:var(--branco);color:var(--texto)}
+h4{color:var(--azul);margin:18px 0 0;font-size:14px}
+.opcoes{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}.opcoes label{font-weight:400;color:var(--texto);margin:0}.opcoes input{width:auto}
+.doc{border:1px solid var(--borda);border-left:4px solid var(--borda);border-radius:10px;padding:10px 12px;margin:8px 0}
+.doc.st-pendente{border-left-color:var(--lar)}.doc.st-enviado{border-left-color:var(--royal)}.doc.st-aprovado{border-left-color:var(--verde)}
+.doc.st-recusado{border-left-color:var(--verm)}.doc.st-dispensado{border-left-color:var(--cinza-txt);opacity:.8}
+.doc-cab{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.btn-arq{display:inline-block;margin:8px 0 0;padding:10px 14px;border-radius:8px;background:var(--azul-fundo);color:var(--azul-txt);font-weight:600;cursor:pointer;font-size:14px}
+.arq-oculto{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.contrato-txt{white-space:pre-wrap;background:var(--cinza);border-radius:8px;padding:12px;font-size:14px;max-height:360px;overflow:auto}
+.aceite{font-weight:600;color:var(--texto)}.aceite input{width:auto}
+.revisao{list-style:none;padding:0;margin:0}.revisao li{padding:9px 12px;border-radius:8px;margin:6px 0}
+.revisao li.ok{background:var(--verde-fundo);color:var(--verde-txt)}.revisao li.falta{background:var(--lar-fundo);color:var(--lar-txt)}
+.campo{margin:8px 0}.campo .v{white-space:pre-wrap}
+.secao{border-top:1px solid var(--borda);margin-top:12px;padding-top:6px;font-weight:700;color:var(--azul);font-size:14px}
+#pad{width:100%;height:170px;border:1px dashed var(--cinza-txt);border-radius:8px;touch-action:none;background:var(--branco)}
+.rodape{text-align:center;color:var(--cinza-txt);font-size:11.5px;margin:16px 0}
+#veu{position:fixed;inset:0;background:rgba(244,246,249,.82);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:14px}
+#veu.on{display:flex}
+#veu img{width:150px;height:auto}
+#veu .barra{width:150px;height:4px;background:var(--borda);border-radius:2px;overflow:hidden}
+#veu .barra i{display:block;width:40%;height:100%;background:var(--aqua);animation:veu 1s infinite linear}
+@keyframes veu{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+/* avaliação de desempenho pelo link (Fase 4A) */
+.escala{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.escala label{display:flex;align-items:center;gap:4px;border:1px solid var(--borda);border-radius:8px;padding:8px 12px;margin:0;font-weight:600;color:var(--texto);cursor:pointer;background:var(--branco)}
+.escala input{width:auto;margin:0}
+.ancoras{font-size:12.5px;color:var(--cinza-txt);margin:4px 0 0 0;padding-left:18px}
+.nota-grande{font-size:30px;font-weight:700;color:var(--azul)}
+</style></head><body>
+<div id="veu" aria-hidden="true"><img src="data:image/png;base64,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" alt=""><div class="barra"><i></i></div></div>
+<div class="top"><a href="./" class="marca" aria-label="Ambimet — vagas abertas"><img src="logo-branco.png" alt="Ambimet"></a><span class="risco"></span><b>Trabalhe <span>conosco</span></b></div>
+<main id="conteudo"></main>
+<div class="rodape" id="versao"></div>
+
+<script>
+// ===================== VERSÃO (Guia §6) =====================
+const VERSAO = 'v13 · 29/09/2026';
+
+/* AVISO DE CARREGANDO (Guia §5.1, Modelo E) — no topo, antes de qualquer if. */
+(function(){
+  var n = 0, tMostrar = null, tEsconder = null, desde = 0;
+  var PERMANENCIA = 300;
+  function veu(){ return document.getElementById('veu'); }
+  function mostrar(){ var v = veu(); if(!v) return; if(!v.classList.contains('on')){ v.classList.add('on'); desde = Date.now(); } }
+  function esconder(){
+    var v = veu(); if(!v) return;
+    var falta = PERMANENCIA - (Date.now() - desde);
+    if(v.classList.contains('on') && falta > 0){ tEsconder = setTimeout(esconder, falta); return; }
+    v.classList.remove('on');
+  }
+  function comecou(){ clearTimeout(tEsconder); tEsconder = null; if(++n === 1){ clearTimeout(tMostrar); tMostrar = setTimeout(mostrar, 250); } }
+  function acabou(){ if(--n <= 0){ n = 0; clearTimeout(tMostrar); clearTimeout(tEsconder); tEsconder = setTimeout(esconder, 350); } }
+  var orig = window.fetch;
+  if(typeof orig !== 'function') return;
+  window.fetch = function(){
+    var url = '';
+    try { var a = arguments[0]; url = String((a && a.url) || a || ''); } catch(e){}
+    if(url.indexOf('supabase.co') < 0) return orig.apply(this, arguments);
+    comecou();
+    return orig.apply(this, arguments).then(function(r){ acabou(); return r; }, function(e){ acabou(); throw e; });
+  };
+})();
+
+// Mesmo projeto do rh/index.html — CONFIRMAR NA PUBLICAÇÃO. Chave publishable.
+// Esta página só alcança as duas funções abertas a quem não tem login
+// (fn_rh_fb_por_token e fn_rh_fb_assinar_por_token), que validam o token por dentro.
+const SUPABASE_URL  = 'https://yvvrxmhbaehuuxxsvxgi.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_WUcykcuZAcyjdaKtVjkb6Q_jID9Zi89';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false } });
+
+const $ = id => document.getElementById(id);
+const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// data pura ("2026-09-25") é o dia; data COM hora (timestamptz) vem em UTC e é
+// mostrada no dia de Brasília — cortar a string dava o dia seguinte depois das 21h
+const fmtData = d => { if(!d) return '—'; const s = String(d);
+  return s.length > 10 ? new Date(s).toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' }) : new Date(s + 'T12:00:00').toLocaleDateString('pt-BR'); };
+const tela = h => { $('conteudo').innerHTML = h; };
+const msg = (id, t, tipo) => { const b = $(id); if(b) b.innerHTML = `<div class="msg msg-${tipo || 'ok'}">${esc(t)}</div>`; };
+const QS = new URLSearchParams(location.search);
+const TOKEN = (QS.get('assinar') || '').trim();
+
+const SITUACAO = {
+  invalido: 'Este link não é válido. Confira se copiou o endereço inteiro.',
+  ja_assinado: 'Esta assinatura já foi registrada. Obrigado.',
+  cancelado: 'Este feedback foi cancelado. Procure o RH.',
+  link_cancelado: 'Este link foi substituído por outro. Use o link mais recente que você recebeu.',
+  bloqueado: 'Este link foi bloqueado por tentativas erradas. Peça um novo ao RH.',
+  expirado: 'Este link venceu. Peça um novo ao RH.',
+  indisponivel: 'Este feedback não está aguardando assinatura.'
+};
+
+// ===================== ASSINAR O FEEDBACK (?assinar=TOKEN) =====================
+let PAD = null, DADOS = null;
+async function telaAssinar(){
+  const { data, error } = await db.rpc('fn_rh_fb_por_token', { p_token: TOKEN });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  DADOS = data;
+  if(data.situacao !== 'pendente') return tela(`<div class="card"><h2>Registro de feedback</h2><div class="msg msg-${data.situacao === 'ja_assinado' ? 'ok' : 'aviso'}">${esc(SITUACAO[data.situacao] || 'Link indisponível.')}</div></div>`);
+  const c = data.conteudo, col = data.papel === 'colaborador';
+  const blocos = [];
+  c.respostas.forEach(r => { const u = blocos[blocos.length - 1];
+    if(r.secao && u && u.secao === r.secao) u.itens.push(r); else blocos.push({ secao: r.secao, itens: [r] }); });
+  tela(`<div class="card"><h2>${esc(String(c.modelo.cabecalho || '').split('\n').join(' · '))}</h2>
+      <div class="mut">${esc(c.modelo.codigo)} rev. ${esc(c.modelo.revisao_doc || '')} · conversa em ${fmtData(c.data_conversa)} · conduzida por ${esc(c.condutor)}</div>
+      <div class="msg msg-info">${col ? 'Leia o registro da sua conversa de feedback. Assinar confirma que você <b>tomou ciência</b> — não que concorda com tudo: você pode escrever seu comentário, que fica junto.'
+        : 'Você foi indicado(a) como <b>responsável pelo feedback</b>. Leia o registro e assine.'}</div></div>
+    <div class="card">${blocos.map(b => `${b.secao ? `<div class="secao">${esc(b.secao)}</div>` : ''}${b.itens.map(r =>
+        `<div class="campo"><div class="mut">${esc(r.rotulo)}</div><div class="v">${esc(r.valor || '—')}</div></div>`).join('')}`).join('')}
+      ${c.combinados.length ? `<div class="secao">Combinados</div>${c.combinados.map(x => `<div class="campo">• ${esc(x.acao)} <span class="mut">(${x.responsavel === 'condutor' ? 'supervisor' : 'você'}${x.prazo ? ', até ' + fmtData(x.prazo) : ''})</span></div>`).join('')}` : ''}
+      ${c.proximo_retorno ? `<div class="campo"><b>Próximo retorno combinado:</b> ${fmtData(c.proximo_retorno)}</div>` : ''}
+      <p class="mut" style="word-break:break-all">Código deste conteúdo (SHA-256): ${esc(data.conteudo_hash)}</p></div>
+    <div class="card"><h3>Assinar</h3>
+      <label for="as-nome">Seu nome completo</label><input id="as-nome" autocomplete="name" value="">
+      ${col ? `<label for="as-doc">CPF ou matrícula</label><input id="as-doc" inputmode="numeric" autocomplete="off">
+        <div class="mut">Só para conferir que é você. O número não fica guardado neste registro.</div>`
+        : `<div class="mut">Digite o nome exatamente como a Ambimet cadastrou: ${esc(data.nome_esperado)}.</div>`}
+      <label for="as-com">Comentário (opcional)</label><textarea id="as-com" placeholder="Se quiser, registre sua opinião sobre o que foi conversado."></textarea>
+      <label>Assine no quadro, com o dedo ou o mouse</label><canvas id="pad" aria-label="Quadro de assinatura"></canvas>
+      <button class="btn-sec" style="margin-top:6px" onclick="PAD && PAD.limpar()">Limpar o quadro</button>
+      <div id="as-msg"></div>
+      <button class="btn" style="margin-top:12px" onclick="assinar('assinar')">Assinar</button>
+      ${col ? `<p class="mut" style="margin-top:14px">Não quer assinar? <a href="#" onclick="event.preventDefault();$('rec').classList.toggle('hide')">Registrar recusa com motivo</a></p>
+        <div id="rec" class="hide"><label for="as-mot">Motivo da recusa</label><textarea id="as-mot"></textarea>
+        <button class="btn-sec" style="width:100%;margin-top:8px" onclick="assinar('recusar')">Registrar recusa</button></div>` : ''}
+      <p class="mut">Tentativas restantes: ${data.tentativas_restantes}. Link válido até ${new Date(data.expira_em).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' })}.</p></div>`);
+  PAD = montarPad($('pad'));
+}
+function montarPad(canvas){
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.max(300, r.width || 300); canvas.height = r.height || 170;
+  const ctx = canvas.getContext && canvas.getContext('2d');
+  if(!ctx) return { limpar(){}, desenhou: () => false, dataURL: () => '' };
+  ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--azul').trim() || 'navy';
+  let desenhando = false, lx = 0, ly = 0, desenhou = false;
+  const pos = e => { const t = e.touches ? e.touches[0] : e; const b = canvas.getBoundingClientRect();
+    return [(t.clientX - b.left) * (canvas.width / b.width), (t.clientY - b.top) * (canvas.height / b.height)]; };
+  const ini = e => { desenhando = true; [lx, ly] = pos(e); e.preventDefault(); };
+  const mov = e => { if(!desenhando) return; const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y); ctx.stroke(); [lx, ly] = [x, y]; desenhou = true; e.preventDefault(); };
+  const fim = () => { desenhando = false; };
+  canvas.addEventListener('mousedown', ini); canvas.addEventListener('mousemove', mov); window.addEventListener('mouseup', fim);
+  canvas.addEventListener('touchstart', ini, { passive:false }); canvas.addEventListener('touchmove', mov, { passive:false }); canvas.addEventListener('touchend', fim);
+  return { limpar(){ ctx.clearRect(0, 0, canvas.width, canvas.height); desenhou = false; }, desenhou: () => desenhou, dataURL: () => canvas.toDataURL('image/png') };
+}
+async function assinar(acao){
+  const traco = acao === 'assinar' && PAD && PAD.desenhou() ? PAD.dataURL() : null;
+  const com = acao === 'recusar' ? ($('as-mot').value || '').trim() : ($('as-com').value || '').trim();
+  const { data, error } = await db.rpc('fn_rh_fb_assinar_por_token', { p_token: TOKEN, p_nome: ($('as-nome').value || '').trim(),
+    p_doc: $('as-doc') ? $('as-doc').value : null, p_acao: acao, p_traco: traco, p_comentario: com || null });
+  if(error) return msg('as-msg', 'Não foi possível registrar agora. Tente de novo.', 'erro');
+  const r = (data || [])[0] || {};
+  if(r.ok) return tela(`<div class="card"><h2>Pronto</h2><div class="msg msg-ok">${esc(r.mensagem)}</div>
+    <p class="mut">Você pode fechar esta página. Uma cópia do documento fica com o RH da Ambimet.</p></div>`);
+  if(['bloqueado','expirado','ja_assinado','cancelado','link_cancelado','indisponivel'].includes(r.situacao))
+    return tela(`<div class="card"><div class="msg msg-aviso">${esc(r.mensagem)}</div></div>`);
+  msg('as-msg', r.mensagem || 'Confira os dados.', 'erro');
+}
+
+// ===================== CARREIRAS (Fase 2A) =====================
+const VAGA = (QS.get('vaga') || '').trim();
+const ACOMP = (QS.get('acompanhar') || '').trim();
+const MODAL = { presencial:'Presencial', hibrido:'Híbrido', remoto:'Remoto' };
+const CONTR = { clt:'CLT', estagio:'Estágio', aprendiz:'Aprendiz', temporario:'Temporário', pj:'PJ' };
+const JOB_TYPE = { clt:'FULL_TIME', estagio:'INTERN', aprendiz:'INTERN', temporario:'TEMPORARY', pj:'CONTRACTOR' };
+const par = t => esc(t || '').replace(/\n/g, '<br>');
+
+async function telaLista(){
+  const { data, error } = await db.rpc('fn_rh_vagas_publicas');
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível carregar as vagas agora.</div></div>`);
+  const areas = [...new Set((data || []).map(x => x.area).filter(Boolean))].sort();
+  const cidades = [...new Set((data || []).map(x => x.cidade + '/' + x.uf))].sort();
+  document.title = 'Trabalhe na Ambimet';
+  tela(`<div class="card"><h2>Trabalhe na Ambimet</h2><p class="mut">Laboratório acreditado ISO/IEC 17025 em emissões atmosféricas e qualidade do ar, em Maceió/AL.</p>
+      ${(data || []).length ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="f-area" onchange="filtrar()" aria-label="Área" style="flex:1;min-width:140px;padding:10px;border:1px solid var(--borda);border-radius:8px"><option value="">Todas as áreas</option>${areas.map(a => `<option>${esc(a)}</option>`).join('')}</select>
+        <select id="f-cid" onchange="filtrar()" aria-label="Cidade" style="flex:1;min-width:140px;padding:10px;border:1px solid var(--borda);border-radius:8px"><option value="">Todas as cidades</option>${cidades.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>` : ''}</div>
+    <div id="lista">${(data || []).length ? '' : '<div class="card"><p class="mut">Nenhuma vaga aberta no momento. Volte em breve.</p></div>'}</div>`);
+  window.__VAGAS = data || [];
+  filtrar();
+}
+function filtrar(){
+  const a = $('f-area') ? $('f-area').value : '', c = $('f-cid') ? $('f-cid').value : '';
+  const l = (window.__VAGAS || []).filter(x => (!a || x.area === a) && (!c || x.cidade + '/' + x.uf === c));
+  if(!$('lista') || !window.__VAGAS.length) return;
+  $('lista').innerHTML = l.map(x => `<div class="card"><h3 style="margin:0"><a href="?vaga=${encodeURIComponent(x.slug)}">${esc(x.titulo)}</a></h3>
+    <div class="mut">${esc(x.cidade)}/${esc(x.uf)} · ${esc(MODAL[x.modalidade] || x.modalidade)} · ${esc(CONTR[x.tipo_contratacao] || '')}${x.area ? ' · ' + esc(x.area) : ''}</div>
+    <div class="mut">Inscrições até ${fmtData(x.encerra_em)}</div></div>`).join('') || '<div class="card"><p class="mut">Nenhuma vaga com esse filtro.</p></div>';
+}
+
+let VG = null;
+async function telaVaga(){
+  const { data, error } = await db.rpc('fn_rh_vaga_publica', { p_slug: VAGA });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível carregar a vaga agora.</div></div>`);
+  VG = data;
+  if(data.situacao === 'inexistente') return tela(`<div class="card"><h2>Vaga não encontrada</h2><p><a href="./">Ver as vagas abertas</a></p></div>`);
+  document.title = data.titulo + ' — Ambimet';
+  publicarJobPosting(data);
+  const aberta = data.situacao === 'aberta';
+  const sec = (t, x) => x ? `<h3 style="margin-top:14px">${t}</h3><div>${par(x)}</div>` : '';
+  tela(`<div class="card"><p style="margin:0 0 6px"><a href="./">← todas as vagas</a></p><h2>${esc(data.titulo)}</h2>
+      <div class="mut">${esc(data.cidade)}/${esc(data.uf)} · ${esc(MODAL[data.modalidade] || '')} · ${esc(CONTR[data.tipo_contratacao] || '')}${data.area ? ' · ' + esc(data.area) : ''}
+        ${data.vagas_qtd > 1 ? ` · ${data.vagas_qtd} vagas` : ''}</div>
+      ${aberta ? `<div class="mut">Inscrições até ${fmtData(data.encerra_em)}</div>` : '<div class="msg msg-aviso">Esta vaga não está mais recebendo candidaturas.</div>'}
+      ${sec('Sobre a vaga', data.descricao)}${sec('Responsabilidades', data.responsabilidades)}${sec('Requisitos', data.requisitos)}
+      ${sec('Diferenciais', data.diferenciais)}${sec('Benefícios', data.beneficios)}${sec('Jornada', data.jornada)}${sec('Faixa salarial', data.faixa_divulgada)}</div>
+    ${aberta ? formCandidatura(data) : ''}`);
+}
+// dados estruturados JobPosting (schema.org) — o que torna a vaga elegível ao
+// Google for Jobs sem custo (prompt §7.2 item 10). validThrough = encerramento.
+function publicarJobPosting(d){
+  const j = { '@context':'https://schema.org/', '@type':'JobPosting', title: d.titulo,
+    description: [d.descricao, d.responsabilidades, d.requisitos, d.beneficios].filter(Boolean).map(t => '<p>' + esc(t).replace(/\n/g, '<br>') + '</p>').join(''),
+    datePosted: d.publicada_em, validThrough: d.encerra_em ? d.encerra_em + 'T23:59:59-03:00' : undefined,
+    employmentType: JOB_TYPE[d.tipo_contratacao] || 'OTHER',
+    hiringOrganization: { '@type':'Organization', name:'Ambimet Engenharia', sameAs:'https://ambimet.com.br', logo: new URL('logo-branco.png', location.href).href },
+    jobLocation: { '@type':'Place', address: { '@type':'PostalAddress', addressLocality: d.cidade, addressRegion: d.uf, addressCountry:'BR' } },
+    directApply: true };
+  if(d.modalidade === 'remoto'){ j.jobLocationType = 'TELECOMMUTE'; j.applicantLocationRequirements = { '@type':'Country', name:'Brasil' }; }
+  const s = document.createElement('script'); s.type = 'application/ld+json'; s.id = 'jobposting'; s.textContent = JSON.stringify(j);
+  document.head.appendChild(s);
+}
+function formCandidatura(d){
+  const q = d.perguntas || [];
+  return `<div class="card"><h2>Candidatar-se</h2><p class="mut">Leva poucos minutos. Só nome, e-mail, telefone e currículo; o resto pedimos a quem avançar.</p>
+    <label for="c-nome">Nome completo</label><input id="c-nome" autocomplete="name">
+    <label for="c-email">E-mail</label><input id="c-email" type="email" autocomplete="email">
+    <label for="c-tel">Telefone com DDD</label><input id="c-tel" type="tel" autocomplete="tel" inputmode="tel">
+    <div style="display:flex;gap:8px"><div style="flex:3"><label for="c-cid">Cidade</label><input id="c-cid" autocomplete="address-level2"></div>
+      <div style="flex:1"><label for="c-uf">UF</label><input id="c-uf" maxlength="2" autocomplete="address-level1"></div></div>
+    <label for="c-link">LinkedIn (opcional)</label><input id="c-link" type="url">
+    <label for="c-cv">Currículo em PDF (até ${d.curriculo_max_mb} MB)</label><input id="c-cv" type="file" accept="application/pdf,.pdf">
+    ${q.map(p => `<label for="q-${p.id}">${esc(p.pergunta)}${p.obrigatoria ? ' *' : ''}</label>${p.tipo === 'sim_nao'
+      ? `<select id="q-${p.id}" data-q="${p.id}" style="width:100%;padding:11px;border:1px solid var(--borda);border-radius:8px;font-size:16px"><option value="">— escolha —</option><option value="sim">Sim</option><option value="nao">Não</option></select>`
+      : `<textarea id="q-${p.id}" data-q="${p.id}"></textarea>`}`).join('')}
+    <div style="position:absolute;left:-9999px" aria-hidden="true"><label for="c-site">Não preencha</label><input id="c-site" tabindex="-1" autocomplete="off"></div>
+    <div class="msg msg-info" style="margin-top:14px"><b>Seus dados (LGPD)</b><br>${esc(d.consentimento.texto)}</div>
+    <label style="font-weight:600;color:var(--texto)"><input type="checkbox" id="c-aceite" style="width:auto"> Li e aceito o uso dos meus dados para esta candidatura.</label>
+    <label style="font-weight:400;color:var(--texto)"><input type="checkbox" id="c-banco" style="width:auto"> ${esc(d.consentimento.texto_banco)} (opcional)</label>
+    <div id="c-msg"></div>
+    <button class="btn" style="margin-top:12px" id="c-ok" onclick="enviarCandidatura()">Enviar candidatura</button></div>`;
+}
+async function enviarCandidatura(){
+  const arq = $('c-cv').files && $('c-cv').files[0];
+  if(arq && (!/\.pdf$/i.test(arq.name) || arq.size > VG.curriculo_max_mb * 1024 * 1024))
+    return msg('c-msg', `O currículo precisa ser PDF de até ${VG.curriculo_max_mb} MB.`, 'erro');
+  const resp = {}; document.querySelectorAll('[data-q]').forEach(e => { resp[e.dataset.q] = e.value; });
+  $('c-ok').disabled = true;
+  const { data, error } = await db.rpc('fn_rh_candidatar', { p_slug: VAGA, p_nome: $('c-nome').value, p_email: $('c-email').value,
+    p_telefone: $('c-tel').value, p_cidade: $('c-cid').value || null, p_uf: $('c-uf').value || null, p_linkedin: $('c-link').value || null,
+    p_respostas: resp, p_consentimento: VG.consentimento.versao, p_aceite: $('c-aceite').checked, p_banco: $('c-banco').checked,
+    p_isca: $('c-site').value || null });
+  $('c-ok').disabled = false;
+  if(error) return msg('c-msg', 'Não foi possível enviar agora. Tente de novo em alguns minutos.', 'erro');
+  if(!data.ok) return msg('c-msg', data.mensagem, 'erro');
+  let aviso = '';
+  if(data.token && arq){ const r = await enviarCurriculo(data.token, arq); if(!r.ok) aviso = `<div class="msg msg-aviso">${esc(r.mensagem)} Você pode enviar depois, pelo link abaixo.</div>`; }
+  const link = data.token ? location.origin + location.pathname + '?acompanhar=' + data.token : '';
+  tela(`<div class="card"><h2>Candidatura recebida</h2><div class="msg msg-ok">${esc(data.mensagem)}</div>${aviso}
+    ${link ? `<p><b>Guarde este link</b> — é por ele que você acompanha a candidatura${arq ? '' : ', envia o currículo'} e pode pedir a eliminação dos seus dados:</p>
+      <div style="display:flex;gap:8px;align-items:stretch"><input id="c-link-acomp" value="${esc(link)}" readonly onclick="this.select()" aria-label="Seu link de acompanhamento" style="flex:1;min-width:0">
+        <button class="btn" id="c-copiar" style="width:auto;white-space:nowrap" onclick="copiarLink()">Copiar</button></div>
+      <p style="margin:10px 0 0"><a href="${esc(link)}">Abrir minha candidatura</a></p>
+      <p class="mut">Dica: salve nos favoritos ou mande para você mesmo por WhatsApp/e-mail. A Ambimet não pede senha nem pagamento em nenhuma etapa.</p>` : ''}
+    <p><a href="./">Ver outras vagas</a></p></div>`);
+}
+// copia o link de acompanhamento; se o navegador não deixar, seleciona o texto para o Ctrl+C
+async function copiarLink(){
+  const i = $('c-link-acomp'), b = $('c-copiar');
+  try { await navigator.clipboard.writeText(i.value); b.textContent = 'Copiado ✓'; }
+  catch(e){ i.focus(); i.select(); try { document.execCommand('copy'); b.textContent = 'Copiado ✓'; } catch(e2){ b.textContent = 'Selecionado: Ctrl+C'; } }
+  setTimeout(() => { if($('c-copiar')) $('c-copiar').textContent = 'Copiar'; }, 2500);
+}
+// currículo: a Edge Function confere o token e devolve a URL de envio; o arquivo
+// vai direto para o bucket privado; o banco confere que chegou no lugar certo
+async function enviarCurriculo(token, arq){
+  try{
+    const { data: e, error: e1 } = await db.functions.invoke('rh-candidatura', { body: { token, nome: arq.name, tamanho: arq.size, tipo: arq.type || 'application/pdf' } });
+    if(e1 || !e || !e.caminho) return { ok: false, mensagem: 'Não conseguimos receber o currículo agora.' };
+    const { error: e2 } = await db.storage.from('rh-arquivos').uploadToSignedUrl(e.caminho, e.token_envio, arq, { contentType: 'application/pdf' });
+    if(e2) return { ok: false, mensagem: 'O envio do currículo falhou.' };
+    const { data: r } = await db.rpc('fn_rh_curriculo_registrar', { p_token: token, p_path: e.caminho, p_nome: arq.name });
+    return r || { ok: false, mensagem: 'O envio do currículo falhou.' };
+  }catch(x){ return { ok: false, mensagem: 'O envio do currículo falhou.' }; }
+}
+async function telaAcompanhar(){
+  const { data, error } = await db.rpc('fn_rh_candidatura_acompanhar', { p_token: ACOMP });
+  if(error || !data || data.situacao === 'invalido') return tela(`<div class="card"><div class="msg msg-aviso">Link inválido ou vencido.</div><p><a href="./">Ver as vagas abertas</a></p></div>`);
+  if(data.situacao === 'eliminado') return tela(`<div class="card"><div class="msg msg-ok">Seus dados foram eliminados, como você pediu.</div></div>`);
+  tela(`<div class="card"><h2>Olá, ${esc(data.nome)}</h2><p>Sua candidatura para <b>${esc(data.vaga)}</b>, enviada em ${fmtData(data.enviada_em)}:</p>
+      <div class="msg msg-info"><b>${esc(data.status)}</b>${data.etapa ? ' — ' + esc(data.etapa) : ''}</div></div>
+    ${htmlEntrevistas(data.entrevistas)}
+    ${data.tem_curriculo ? '' : `<div class="card"><h3>Enviar currículo</h3><input id="a-cv" type="file" accept="application/pdf,.pdf">
+      <div id="a-msg"></div><button class="btn" style="margin-top:10px" onclick="curriculoDepois()">Enviar PDF (até ${data.curriculo_max_mb} MB)</button></div>`}
+    <div class="card"><h3>Seus dados</h3>${data.eliminacao_pedida ? '<div class="msg msg-ok">Seu pedido de eliminação está registrado.</div>'
+      : `<p class="mut">Você pode pedir que a Ambimet elimine seus dados e retire você do banco de talentos.</p>
+        <div id="e-msg"></div><button class="btn-sec" style="width:100%" onclick="pedirEliminacao()">Pedir a eliminação dos meus dados</button>`}</div>`);
+  window.__ACOMP = data;
+  // provas e inventário que o RH pediu: cada um com o seu link
+  const { data: t } = await db.rpc('fn_rh_candidatura_tarefas', { p_token: ACOMP });
+  if((t || []).length){
+    const st = { convidada:'a fazer', concluida:'concluída', em_andamento:'em andamento', finalizada:'entregue', respondida:'respondido', aceita:'aceita', recusada:'recusada' };
+    $('conteudo').insertAdjacentHTML('beforeend', `<div class="card" id="tarefas"><h3>O que o RH pediu para você</h3>${t.map(x => `<div class="campo">
+      <b>${esc(x.titulo)}</b> <span class="mut">(${esc(st[x.status] || x.status)}${x.tempo_minutos ? ', ' + x.tempo_minutos + ' min' : ''})</span>
+      ${x.token ? `<div><a class="btn" style="display:inline-block;margin-top:6px;text-decoration:none" href="?${x.tipo}=${encodeURIComponent(x.token)}">${x.tipo === 'admissao' ? 'Abrir minha admissão' : x.tipo === 'proposta' ? 'Ler a proposta' : x.status === 'em_andamento' ? 'Continuar' : 'Começar'}</a></div>` : ''}</div>`).join('')}</div>`);
+  }
+}
+// a entrevista marcada pelo RH (dia e hora de Brasília, formato, local ou link)
+const FORMATO_ENT = { presencial:'Presencial', video:'Por vídeo (chamada on-line)', telefone:'Por telefone' };
+const quandoBr = d => new Date(d).toLocaleString('pt-BR', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
+function htmlEntrevistas(l){
+  if(!(l || []).length) return '';
+  return `<div class="card" id="entrevistas"><h3>${l.length > 1 ? 'Suas entrevistas' : 'Sua entrevista'}</h3>${l.map(e => `<div class="campo">
+      ${e.status === 'cancelada' ? '<span class="badge b-erro">cancelada</span> ' : ''}<b>${esc(quandoBr(e.quando))}</b>
+      <div class="mut">${esc(FORMATO_ENT[e.formato] || e.formato)} · cerca de ${e.duracao_min} min</div>
+      ${e.local && e.status !== 'cancelada' ? (/^https?:\/\//i.test(e.local) ? `<div><a href="${esc(e.local)}" target="_blank" rel="noopener">Entrar na chamada</a></div>`
+                                                                      : `<div>Local: ${esc(e.local)}</div>`) : ''}</div>`).join('')}
+    <p class="mut">Se não puder comparecer, avise o RH respondendo a mensagem que você recebeu.</p></div>`;
+}
+async function curriculoDepois(){
+  const arq = $('a-cv').files && $('a-cv').files[0];
+  if(!arq) return msg('a-msg', 'Escolha o arquivo PDF.', 'erro');
+  if(!/\.pdf$/i.test(arq.name) || arq.size > window.__ACOMP.curriculo_max_mb * 1024 * 1024) return msg('a-msg', `Precisa ser PDF de até ${window.__ACOMP.curriculo_max_mb} MB.`, 'erro');
+  const r = await enviarCurriculo(ACOMP, arq);
+  if(!r.ok) return msg('a-msg', r.mensagem, 'erro');
+  telaAcompanhar();
+}
+async function pedirEliminacao(){
+  if(!window.__confirmaEl){ window.__confirmaEl = true; return msg('e-msg', 'Tem certeza? Clique de novo para confirmar. Sua candidatura deixa de ser considerada.', 'aviso'); }
+  const { data, error } = await db.rpc('fn_rh_candidato_pedir_eliminacao', { p_token: ACOMP });
+  if(error || !data.ok) return msg('e-msg', (data && data.mensagem) || 'Não foi possível registrar agora.', 'erro');
+  telaAcompanhar();
+}
+
+// ===================== PROVA ONLINE (?prova=TOKEN) — Fase 2C =====================
+// O relógio é do SERVIDOR: a página só mostra quanto falta; quem decide que
+// acabou é o banco (prazo_fim). Cada resposta é gravada ao escolher/sair do
+// campo, então fechar a aba não perde nada. O gabarito nunca vem para cá.
+const PROVA = (QS.get('prova') || '').trim();
+let PV = null, RELOGIO = null, DESVIO = 0;
+const PV_MSG = { invalido:'Este link não é válido ou venceu. Peça um novo ao RH.', finalizada:'Prova entregue. Obrigado! O RH vai avaliar e dar retorno.',
+  cancelada:'Esta prova foi cancelada pelo RH.' };
+async function telaProva(dados){
+  let data = dados;
+  if(!data){ const r = await db.rpc('fn_rh_prova_por_token', { p_token: PROVA }); if(r.error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora.</div></div>`); data = r.data; }
+  PV = data; clearInterval(RELOGIO);
+  if(PV_MSG[data.situacao]) return tela(`<div class="card"><h2>Prova</h2><div class="msg msg-${data.situacao === 'finalizada' ? 'ok' : 'aviso'}">${esc(PV_MSG[data.situacao])}</div></div>`);
+  if(data.situacao === 'convidada') return tela(`<div class="card"><h2>${esc(data.titulo)}</h2>
+      <div class="msg msg-info">${data.n_questoes} questões · <b>${data.tempo_minutos} minutos</b> a partir do momento em que você clicar em Começar.
+        O tempo corre mesmo que você feche a página; ao acabar, a prova é entregue com o que estiver respondido.</div>
+      ${data.instrucoes ? `<p>${par(data.instrucoes)}</p>` : ''}
+      <p class="mut">Faça sozinho(a), num lugar tranquilo e com a internet estável.</p>
+      <button class="btn" onclick="comecarProva()">Começar</button></div>`);
+  DESVIO = new Date(data.agora).getTime() - Date.now();   // relógio do servidor − relógio do aparelho
+  tela(`<div class="card" style="position:sticky;top:0;z-index:5"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+      <b>${esc(data.titulo)}</b><span id="pv-tempo" class="badge" aria-live="polite"></span></div></div>
+    ${data.questoes.map((q, i) => `<div class="card"><div class="mut">Questão ${i + 1} de ${data.questoes.length}</div><p style="white-space:pre-wrap">${esc(q.enunciado)}</p>
+      ${q.tipo === 'multipla' ? (q.alternativas || []).map(a => `<label style="font-weight:400;color:var(--texto);display:block;margin:6px 0">
+          <input type="radio" name="q${q.id}" value="${esc(a.letra)}" style="width:auto" ${q.resposta === a.letra ? 'checked' : ''} onchange="responder(${q.id}, this.value)"> ${esc(a.letra)}) ${esc(a.texto)}</label>`).join('')
+        : `<textarea id="q${q.id}" onchange="responder(${q.id}, this.value)">${esc(q.resposta || '')}</textarea>`}
+      <div id="st${q.id}" class="mut"></div></div>`).join('')}
+    <div class="card"><div id="pv-msg"></div><button class="btn" onclick="entregarProva()">Entregar a prova</button></div>`);
+  const tick = () => { const falta = new Date(PV.prazo_fim).getTime() - (Date.now() + DESVIO);
+    if(falta <= 0){ clearInterval(RELOGIO); return entregarProva(true); }
+    const m = Math.floor(falta / 60000), s2 = Math.floor(falta % 60000 / 1000);
+    const b = $('pv-tempo'); if(b){ b.textContent = `falta ${m}:${String(s2).padStart(2, '0')}`; b.className = 'badge ' + (falta < 120000 ? 'b-erro' : 'b-info'); } };
+  tick(); RELOGIO = setInterval(tick, 1000);
+}
+async function comecarProva(){
+  const { data, error } = await db.rpc('fn_rh_prova_iniciar', { p_token: PROVA });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível começar agora. Tente de novo.</div></div>`);
+  telaProva(data);
+}
+async function responder(q, valor){
+  const st = $('st' + q); if(st) st.textContent = 'salvando…';
+  const { data, error } = await db.rpc('fn_rh_prova_responder', { p_token: PROVA, p_questao: q, p_resposta: valor });
+  if(data && data.encerrada) return telaProva();
+  if(st) st.textContent = error || !data.ok ? ((data && data.mensagem) || 'não foi possível salvar — tente de novo') : 'resposta salva';
+}
+async function entregarProva(porTempo){
+  if(!porTempo && !window.__confirmaPv){ window.__confirmaPv = true; return msg('pv-msg', 'Depois de entregar não dá para mudar. Clique de novo para confirmar.', 'aviso'); }
+  // antes de entregar, grava o que estiver digitado e ainda não saiu do campo
+  for(const q of (PV.questoes || []).filter(x => x.tipo === 'dissertativa')){ const t = $('q' + q.id); if(t && t.value !== (q.resposta || '')) await responder(q.id, t.value); }
+  await db.rpc('fn_rh_prova_entregar', { p_token: PROVA });
+  telaProva();
+}
+
+// ============ INVENTÁRIO DE AUTOPERCEPÇÃO (?perfil=TOKEN) — Fase 2C ============
+// IPIP-50 (domínio público). NÃO é teste psicológico nem elimina ninguém: é
+// como a pessoa se descreve, e serve de conversa na entrevista (prompt §8.3).
+const PERFIL = (QS.get('perfil') || '').trim();
+const ESCALA = ['Discordo totalmente', 'Discordo', 'Nem concordo nem discordo', 'Concordo', 'Concordo totalmente'];
+async function telaPerfil(){
+  const { data, error } = await db.rpc('fn_rh_perfil_por_token', { p_token: PERFIL });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora.</div></div>`);
+  if(data.situacao === 'respondida') return tela(`<div class="card"><div class="msg msg-ok">Respostas registradas. Obrigado!</div></div>`);
+  if(data.situacao !== 'pendente') return tela(`<div class="card"><div class="msg msg-aviso">Este link não é válido ou venceu. Peça um novo ao RH.</div></div>`);
+  tela(`<div class="card"><h2>Inventário de autopercepção</h2>
+      <p>São 50 frases curtas. Para cada uma, diga o quanto ela descreve <b>como você é hoje</b> — não como gostaria de ser. Não há resposta certa ou errada, e não há tempo.</p>
+      <p class="mut">Não é um teste psicológico e não elimina ninguém: é uma forma de você se apresentar, e o RH usa como assunto na entrevista.
+        Baseado no International Personality Item Pool (IPIP, domínio público), em tradução livre.</p></div>
+    ${data.itens.map((it, i) => `<div class="card" id="pf-${it.id}" style="padding:12px 16px"><div><b>${i + 1}.</b> ${esc(it.texto)}</div>
+      <div role="radiogroup" aria-label="${esc(it.texto)}" style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px">${ESCALA.map((t, n) => `<label style="font-weight:400;color:var(--texto);margin:0">
+        <input type="radio" name="p${it.id}" value="${n + 1}" style="width:auto"> ${esc(t)}</label>`).join('')}</div></div>`).join('')}
+    <div class="card"><div id="pf-msg"></div><button class="btn" onclick="enviarPerfil()">Enviar respostas</button></div>`);
+  window.__PF = data.itens;
+  // respondeu a frase marcada: tira o vermelho na hora
+  $('conteudo').addEventListener('change', ev => { const c = ev.target.closest && ev.target.closest('.pf-falta'); if(c) c.classList.remove('pf-falta'); });
+}
+async function enviarPerfil(){
+  const r = {}; let faltam = 0;
+  const falta = [];
+  window.__PF.forEach((it, i) => { const m = document.querySelector(`input[name="p${it.id}"]:checked`); const card = document.getElementById('pf-' + it.id);
+    if(m){ r[it.id] = Number(m.value); if(card) card.classList.remove('pf-falta'); } else { falta.push(i + 1); if(card) card.classList.add('pf-falta'); } });
+  faltam = falta.length;
+  if(faltam){
+    msg('pf-msg', `Falta${faltam > 1 ? 'm' : ''} responder: frase${faltam > 1 ? 's' : ''} ${falta.join(', ')}. ${faltam > 1 ? 'Elas estão marcadas' : 'Ela está marcada'} em vermelho.`, 'erro');
+    const primeira = document.getElementById('pf-' + window.__PF[falta[0] - 1].id); if(primeira && primeira.scrollIntoView) primeira.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  const { data, error } = await db.rpc('fn_rh_perfil_responder', { p_token: PERFIL, p_respostas: r });
+  if(error || !data.ok) return msg('pf-msg', (data && data.mensagem) || 'Não foi possível enviar agora.', 'erro');
+  tela(`<div class="card"><h2>Pronto</h2><div class="msg msg-ok">${esc(data.mensagem)}</div></div>`);
+}
+
+// ===================== PROPOSTA (?proposta=TOKEN) — Fase 2D =====================
+// Aceite no padrão de assinatura por link: o conteúdo é o congelado na emissão
+// (com o código SHA-256), o nome confere com o cadastro, o CPF só é checado e
+// guardado como SHA-256; 3 tentativas erradas bloqueiam o link.
+const PROPOSTA = (QS.get('proposta') || '').trim();
+const PR_MSG = { invalido:'Este link não é válido. Confira se copiou o endereço inteiro.', aceita:'Proposta aceita. O RH vai entrar em contato para a admissão.',
+  recusada:'Sua resposta já foi registrada. Obrigado.', expirada:'O prazo desta proposta venceu. Fale com o RH da Ambimet.',
+  cancelada:'Esta proposta foi cancelada pelo RH.', bloqueada:'Este link foi bloqueado por tentativas erradas. Fale com o RH.' };
+const moeda = n => Number(n).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+async function telaProposta(){
+  const { data, error } = await db.rpc('fn_rh_proposta_por_token', { p_token: PROPOSTA });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'pendente') return tela(`<div class="card"><h2>Proposta de trabalho</h2><div class="msg msg-${data.situacao === 'aceita' ? 'ok' : 'aviso'}">${esc(PR_MSG[data.situacao] || 'Link indisponível.')}</div></div>`);
+  const c = data.conteudo;
+  const lin = (r, v) => v ? `<div class="campo"><div class="mut">${r}</div><div class="v">${esc(v)}</div></div>` : '';
+  tela(`<div class="card"><h2>Proposta de trabalho — ${esc(c.empresa)}</h2>
+      <p>Olá, ${esc(String(c.candidato).split(' ')[0])}. Esta é a proposta para a vaga de <b>${esc(c.vaga)}</b>.</p>
+      ${lin('Cargo', c.cargo)}${lin('Salário', moeda(c.salario))}${lin('Contratação', CONTR[c.tipo_contratacao] || c.tipo_contratacao)}
+      ${lin('Jornada', c.jornada)}${lin('Benefícios', c.beneficios)}${lin('Local', c.local)}${lin('Início previsto', fmtData(c.data_inicio))}
+      ${lin('Observações', c.observacoes)}
+      <div class="msg msg-info">Responda até <b>${fmtData(c.validade)}</b>. A Ambimet não pede senha nem pagamento em nenhuma etapa.</div>
+      <p class="mut" style="word-break:break-all">Código deste conteúdo (SHA-256): ${esc(data.conteudo_hash)}</p></div>
+    <div class="card"><h3>Aceitar</h3>
+      <label for="pr-nome">Seu nome completo (como na candidatura)</label><input id="pr-nome" autocomplete="name">
+      <label for="pr-cpf">CPF</label><input id="pr-cpf" inputmode="numeric" autocomplete="off">
+      <div class="mut">Só para confirmar que é você: o número não fica guardado em claro.</div>
+      <label>Assine no quadro, com o dedo ou o mouse</label><canvas id="pad" aria-label="Quadro de assinatura"></canvas>
+      <button class="btn-sec" style="margin-top:6px" onclick="PAD && PAD.limpar()">Limpar o quadro</button>
+      <label style="font-weight:600;color:var(--texto)"><input type="checkbox" id="pr-ok" style="width:auto"> Li a proposta e aceito as condições acima.</label>
+      <div id="pr-msg"></div>
+      <button class="btn" style="margin-top:12px" onclick="responderProposta('aceitar')">Aceitar a proposta</button>
+      <p class="mut">Tentativas restantes: ${data.tentativas_restantes}.</p>
+      <p class="mut" style="margin-top:14px">Não vai aceitar? <a href="#" onclick="event.preventDefault();$('pr-rec').classList.toggle('hide')">Recusar a proposta</a></p>
+      <div id="pr-rec" class="hide"><label for="pr-mot">Se puder, conte o motivo</label><textarea id="pr-mot"></textarea>
+        <label for="pr-contra">O que faria você aceitar? (opcional — salário, benefícios, data de início)</label><textarea id="pr-contra"></textarea>
+        <button class="btn-sec" style="width:100%;margin-top:8px" onclick="responderProposta('recusar')">Registrar recusa</button></div></div>`);
+  PAD = montarPad($('pad'));
+}
+async function responderProposta(acao){
+  if(acao === 'aceitar' && !$('pr-ok').checked) return msg('pr-msg', 'Marque que leu e aceita as condições.', 'erro');
+  const traco = acao === 'aceitar' && PAD && PAD.desenhou() ? PAD.dataURL() : null;
+  const { data, error } = await db.rpc('fn_rh_proposta_responder', { p_token: PROPOSTA, p_acao: acao, p_nome: ($('pr-nome').value || '').trim(),
+    p_cpf: acao === 'aceitar' ? $('pr-cpf').value : null, p_traco: traco, p_motivo: acao === 'recusar' ? ($('pr-mot').value || '').trim() : null,
+    p_contraproposta: acao === 'recusar' ? ($('pr-contra').value || '').trim() || null : null });
+  if(error) return msg('pr-msg', 'Não foi possível registrar agora. Tente de novo.', 'erro');
+  if(data.ok) return tela(`<div class="card"><h2>Pronto</h2><div class="msg msg-ok">${esc(data.mensagem)}</div><p class="mut">Você pode fechar esta página.</p></div>`);
+  if(data.situacao !== 'pendente') return tela(`<div class="card"><div class="msg msg-aviso">${esc(data.mensagem)}</div></div>`);
+  msg('pr-msg', data.mensagem + (data.tentativas_restantes != null ? ` Tentativas restantes: ${data.tentativas_restantes}.` : ''), 'erro');
+}
+
+// ===================== ADMISSÃO (?admissao=TOKEN) — Fase 3A =====================
+// O admitido, sem login, em QUATRO PASSOS: 1) dados, 2) documentos (PDF ou foto
+// do celular — o envio começa sozinho ao escolher), 3) contrato, 4) revisar e
+// "Enviar tudo". O CPF e a conta bancária NÃO voltam completos para a página.
+const ADMISSAO = (QS.get('admissao') || '').trim();
+let ADM = null, ADM_PASSO = null;
+const ESCOLARIDADE = { fundamental_incompleto:'Fundamental incompleto', fundamental:'Fundamental completo', medio_incompleto:'Médio incompleto', medio:'Médio completo',
+  tecnico:'Técnico', superior_incompleto:'Superior incompleto', superior:'Superior completo', pos:'Pós-graduação' };
+const ESTADO_CIVIL = { solteiro:'Solteiro(a)', casado:'Casado(a)', uniao_estavel:'União estável', divorciado:'Divorciado(a)', viuvo:'Viúvo(a)' };
+const DOC_ST = { pendente:['a enviar','b-aten'], enviado:['enviado — o RH vai conferir','b-info'], aprovado:['aprovado','b-ok'], recusado:['recusado — envie de novo','b-erro'], dispensado:['não precisa','b-info'] };
+const sel = (id, mapa, atual, vazio) => `<select id="${id}" class="campo-sel">
+  ${vazio ? `<option value="">— escolha —</option>` : ''}${Object.entries(mapa).map(([k, t]) => `<option value="${k}" ${k === atual ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+function admSituacao(data){
+  const obrig = data.docs.filter(x => x.obrigatorio), okDocs = obrig.filter(x => ['enviado','aprovado','dispensado'].includes(x.status)).length;
+  const c = data.contrato;
+  return { dados: !!data.dados, obrig, okDocs, docsOk: okDocs === obrig.length, recusados: data.docs.filter(x => x.status === 'recusado').length,
+           contrato: c ? !!c.assinado_em : null, contratoExiste: !!c };
+}
+async function telaAdmissao(passo){
+  const { data, error } = await db.rpc('fn_rh_admissao_por_token', { p_token: ADMISSAO });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao === 'invalido') return tela(`<div class="card"><div class="msg msg-aviso">Este link não é válido ou venceu. Peça um novo ao RH.</div></div>`);
+  if(data.situacao === 'cancelada') return tela(`<div class="card"><div class="msg msg-aviso">Esta admissão foi cancelada. Fale com o RH.</div></div>`);
+  ADM = data;
+  if(data.situacao === 'concluida') return tela(`<div class="card"><h2>Tudo certo, ${esc(data.nome)}!</h2><div class="msg msg-ok">Sua admissão está concluída. Bem-vindo(a) à Ambimet — até ${fmtData(data.data_inicio)}.</div></div>`);
+  const st = admSituacao(data);
+  // abre no passo pedido; se não, no primeiro que falta
+  ADM_PASSO = passo || ADM_PASSO || (!st.dados ? 1 : (!st.docsOk || st.recusados) ? 2 : (st.contratoExiste && !st.contrato) ? 3 : 4);
+  const d = data.dados || {}, e = d.endereco || {}, b = d.banco || {}, em = d.emergencia || {}, c = data.contrato;
+  const feitos = [st.dados, st.docsOk && !st.recusados, st.contrato === true, !!data.enviou_em].filter(Boolean).length;
+  const passoBtn = (n, t, feito, extra) => `<button class="passo ${ADM_PASSO === n ? 'on' : ''} ${feito ? 'feito' : ''}" onclick="irPassoAdm(${n})">
+    <span class="num">${feito ? '✓' : n}</span> <span>${t}${extra ? `<small>${extra}</small>` : ''}</span></button>`;
+  const campo = (id, rot, val, extra) => `<div class="fld"><label for="${id}">${rot}</label><input id="${id}" value="${esc(val || '')}" ${extra || ''}></div>`;
+  const docCard = x => `<div class="doc st-${x.status}" id="doc-${x.modelo_id}">
+      <div class="doc-cab"><b>${esc(x.nome)}</b><span class="badge ${(DOC_ST[x.status] || [])[1]}">${esc((DOC_ST[x.status] || [x.status])[0])}</span></div>
+      ${x.orientacao ? `<div class="mut">${esc(x.orientacao)}</div>` : ''}${x.motivo ? `<div class="msg msg-${x.status === 'recusado' ? 'erro' : 'info'}">${esc(x.motivo)}</div>` : ''}
+      ${x.arquivo_nome ? `<div class="mut">📎 ${esc(x.arquivo_nome)}</div>` : ''}
+      ${['pendente','recusado','enviado'].includes(x.status) ? `<label class="btn-arq" for="f-${x.modelo_id}">📷 ${x.status === 'enviado' ? 'Trocar o arquivo' : 'Tirar foto ou escolher arquivo'}</label>
+        <input type="file" id="f-${x.modelo_id}" accept="application/pdf,image/*" class="arq-oculto" onchange="enviarDocAdmissao(${x.modelo_id})" aria-label="Arquivo: ${esc(x.nome)}">
+        <div id="fm-${x.modelo_id}"></div>` : ''}</div>`;
+  const obrigatorios = data.docs.filter(x => x.obrigatorio), opcionais = data.docs.filter(x => !x.obrigatorio);
+  tela(`<div class="card"><h2>Bem-vindo(a), ${esc(data.nome)}!</h2>
+      <p>Esta é a sua admissão para <b>${esc(data.cargo || '')}</b>, com início previsto em <b>${fmtData(data.data_inicio)}</b>. Pode fazer aos poucos: o que você salva fica guardado.</p>
+      <div class="barra" aria-label="Progresso"><span style="width:${Math.round(feitos * 100 / 4)}%"></span></div>
+      <div class="passos">${passoBtn(1, 'Seus dados', st.dados)}${passoBtn(2, 'Documentos', st.docsOk && !st.recusados, `${st.okDocs} de ${st.obrig.length}${st.recusados ? ` · ${st.recusados} a refazer` : ''}`)}
+        ${passoBtn(3, 'Contrato', st.contrato === true, st.contratoExiste ? '' : 'o RH libera')}${passoBtn(4, 'Enviar', !!data.enviou_em)}</div>
+      ${data.enviou_em ? `<div class="msg msg-ok" style="margin-bottom:0">Você enviou em ${new Date(data.enviou_em).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' })}. Se o RH pedir algum ajuste, ele aparece aqui.</div>` : ''}
+      <p class="mut" style="margin:8px 0 0">A Ambimet não pede senha nem pagamento em nenhuma etapa.</p></div>
+
+    <div class="card passo-sec ${ADM_PASSO === 1 ? '' : 'hide'}" id="adm-dados"><h3>1. Seus dados</h3>
+      <div class="grade">${campo('ad-nome', 'Nome completo (como no documento)', d.nome_completo || data.nome_completo, 'autocomplete="name"')}
+        ${campo('ad-social', 'Nome social (opcional)', d.nome_social)}
+        ${campo('ad-cpf', 'CPF', '', `inputmode="numeric" autocomplete="off" placeholder="${data.cpf_final ? 'já informado (final ' + esc(data.cpf_final) + ') — deixe em branco para manter' : '000.000.000-00'}"`)}
+        ${campo('ad-nasc', 'Data de nascimento', d.data_nascimento, 'type="date"')}
+        ${campo('ad-tel', 'Telefone com DDD', d.telefone || data.telefone, 'type="tel" inputmode="tel" autocomplete="tel"')}
+        ${campo('ad-rg', 'RG (número)', d.rg)}${campo('ad-pis', 'PIS/NIS (se tiver)', d.pis, 'inputmode="numeric"')}
+        <div class="fld"><label for="ad-esc">Escolaridade</label>${sel('ad-esc', ESCOLARIDADE, d.escolaridade, true)}</div>
+        <div class="fld"><label for="ad-civil">Estado civil</label>${sel('ad-civil', ESTADO_CIVIL, d.estado_civil, true)}</div></div>
+      <h4>Endereço</h4>
+      <div class="grade">${campo('ad-cep', 'CEP', e.cep, 'inputmode="numeric" autocomplete="postal-code" onblur="buscarCep()"')}${campo('ad-rua', 'Rua', e.logradouro, 'autocomplete="address-line1"')}
+        ${campo('ad-num', 'Número', e.numero)}${campo('ad-comp', 'Complemento', e.complemento)}${campo('ad-bairro', 'Bairro', e.bairro)}
+        ${campo('ad-cidade', 'Cidade', e.cidade)}${campo('ad-uf', 'UF', e.uf, 'maxlength="2"')}</div>
+      ${data.tipo_contratacao !== 'pj' ? `<h4>Conta para receber o salário <span class="mut">(opcional — dá para informar depois)</span></h4>
+      <div class="grade">${campo('ad-banco', 'Banco', b.banco)}${campo('ad-ag', 'Agência', b.agencia)}
+        ${campo('ad-conta', 'Conta', '', b.conta_final ? `placeholder="já informada (final ${esc(b.conta_final)})"` : '')}
+        <div class="fld"><label for="ad-tipo">Tipo de conta</label>${sel('ad-tipo', { corrente:'Corrente', poupanca:'Poupança', salario:'Conta-salário' }, b.tipo || 'corrente')}</div>
+        ${campo('ad-pix', 'Chave Pix (opcional)', b.pix)}</div>` : ''}
+      <h4>Vale-transporte</h4>
+      <div class="opcoes"><label><input type="radio" name="ad-vt" value="true" ${d.vale_transporte === true ? 'checked' : ''}> Vou usar</label>
+        <label><input type="radio" name="ad-vt" value="false" ${d.vale_transporte === false ? 'checked' : ''}> Não vou usar</label></div>
+      ${campo('ad-vtt', 'Trajeto (se usar): linhas ou quantas conduções por dia', d.vt_trajeto)}
+      <h4>Contato de emergência</h4>
+      <div class="grade">${campo('ad-em-nome', 'Nome', em.nome)}${campo('ad-em-tel', 'Telefone', em.telefone, 'type="tel"')}${campo('ad-em-par', 'Parentesco', em.parentesco)}</div>
+      <h4>Dependentes <span class="mut">(opcional)</span></h4><div id="ad-deps"></div>
+      <button class="btn-sec" style="margin-top:6px" onclick="addDependente()">+ Incluir dependente</button>
+      <div id="ad-msg"></div><button class="btn" style="margin-top:14px" onclick="salvarDadosAdmissao()">Salvar e continuar →</button></div>
+
+    <div class="card passo-sec ${ADM_PASSO === 2 ? '' : 'hide'}" id="adm-docs"><h3>2. Documentos</h3>
+      <p class="mut">PDF ou foto do celular (até ${data.doc_max_mb} MB cada). Foto: documento inteiro, bem iluminado, sem reflexo. O envio começa assim que você escolhe.</p>
+      ${obrigatorios.map(docCard).join('')}
+      ${opcionais.length ? `<h4>Se se aplicar a você</h4>${opcionais.map(docCard).join('')}` : ''}
+      <button class="btn" style="margin-top:14px" onclick="irPassoAdm(${c ? 3 : 4})">Continuar →</button></div>
+
+    <div class="card passo-sec ${ADM_PASSO === 3 ? '' : 'hide'}" id="adm-contrato"><h3>3. ${c ? esc(c.conteudo.titulo) : 'Contrato'}</h3>
+      ${!c ? '<div class="msg msg-info">O RH ainda vai liberar o contrato para você assinar. Enquanto isso, pode enviar o resto — quando ele estiver pronto, aparece aqui.</div>'
+        : `${c.assinado_em ? `<div class="msg msg-ok">Assinado em ${new Date(c.assinado_em).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' })}. Uma cópia fica com o RH.</div>` : ''}
+      <div class="contrato-txt">${esc(c.conteudo.texto)}</div>
+      <p class="mut" style="word-break:break-all">Código deste contrato (SHA-256): ${esc(c.hash)}</p>
+      ${c.assinado_em ? '' : `<div class="grade">${campo('as-nome', 'Seu nome completo', '', 'autocomplete="name"')}${campo('as-cpf', 'CPF', '', 'inputmode="numeric" autocomplete="off"')}</div>
+        <label>Assine no quadro, com o dedo ou o mouse</label><canvas id="pad" aria-label="Quadro de assinatura"></canvas>
+        <button class="btn-sec" style="margin-top:6px" onclick="PAD && PAD.limpar()">Limpar o quadro</button>
+        <label class="aceite"><input type="checkbox" id="as-ok"> Li o contrato e concordo.</label>
+        <div id="as-msg"></div><button class="btn" style="margin-top:12px" onclick="assinarContrato()">Assinar o contrato</button>
+        <p class="mut">Tentativas restantes: ${c.tentativas_restantes}.</p>`}`}
+      ${!c || c.assinado_em ? `<button class="btn" style="margin-top:14px" onclick="irPassoAdm(4)">Continuar →</button>` : ''}</div>
+
+    <div class="card passo-sec ${ADM_PASSO === 4 ? '' : 'hide'}" id="adm-enviar"><h3>4. Revisar e enviar</h3>
+      <ul class="revisao">
+        <li class="${st.dados ? 'ok' : 'falta'}">${st.dados ? '✓' : '⚠'} Seus dados ${st.dados ? '' : `— <a href="#" onclick="event.preventDefault();irPassoAdm(1)">preencher</a>`}</li>
+        <li class="${st.docsOk && !st.recusados ? 'ok' : 'falta'}">${st.docsOk && !st.recusados ? '✓' : '⚠'} Documentos obrigatórios: ${st.okDocs} de ${st.obrig.length}${st.recusados ? `, ${st.recusados} recusado(s) para refazer` : ''}
+          ${st.docsOk && !st.recusados ? '' : ` — <a href="#" onclick="event.preventDefault();irPassoAdm(2)">enviar</a>`}</li>
+        <li class="${st.contrato === false ? 'falta' : 'ok'}">${st.contrato === false ? `⚠ Contrato para assinar — <a href="#" onclick="event.preventDefault();irPassoAdm(3)">assinar</a>`
+          : st.contrato ? '✓ Contrato assinado' : 'ℹ O contrato vem depois, quando o RH liberar'}</li></ul>
+      <div id="env-msg"></div>
+      <button class="btn" style="margin-top:8px" onclick="enviarTudoAdm(false)">Enviar tudo e fechar</button></div>`);
+  (d.dependentes || []).forEach(x => addDependente(x));
+  if(c && !c.assinado_em && ADM_PASSO === 3) PAD = montarPad($('pad'));
+}
+function irPassoAdm(n){
+  ADM_PASSO = n;
+  document.querySelectorAll('.passo-sec').forEach((s, i) => s.classList.toggle('hide', i + 1 !== n));
+  document.querySelectorAll('.passos .passo').forEach((b, i) => b.classList.toggle('on', i + 1 === n));
+  if(n === 3 && $('pad') && !PAD) PAD = montarPad($('pad'));
+  const topo = $('conteudo'); if(topo && topo.scrollIntoView) topo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function addDependente(x){
+  x = x || {};
+  const box = $('ad-deps'), n = box.children.length;
+  box.insertAdjacentHTML('beforeend', `<div class="dep grade">
+    <div class="fld"><label for="dp-n-${n}">Nome</label><input id="dp-n-${n}" class="dp-n" value="${esc(x.nome || '')}"></div>
+    <div class="fld"><label for="dp-p-${n}">Parentesco</label><input id="dp-p-${n}" class="dp-p" value="${esc(x.parentesco || '')}" placeholder="filho(a), cônjuge…"></div>
+    <div class="fld"><label for="dp-d-${n}">Nascimento</label><input id="dp-d-${n}" class="dp-d" type="date" value="${esc(x.data_nascimento || '')}"></div>
+    <div class="fld" style="align-self:end"><button class="btn-sec" onclick="this.closest('.dep').remove()" aria-label="Tirar dependente">✕ Tirar</button></div></div>`);
+}
+// CEP: preenche rua, bairro, cidade e UF pelo ViaCEP (serviço público). Se falhar, a pessoa digita.
+async function buscarCep(){
+  const cep = ($('ad-cep').value || '').replace(/\D/g, '');
+  if(cep.length !== 8) return;
+  try {
+    const r = await (await fetch('https://viacep.com.br/ws/' + cep + '/json/')).json();
+    if(r.erro) return;
+    [['ad-rua', r.logradouro], ['ad-bairro', r.bairro], ['ad-cidade', r.localidade], ['ad-uf', r.uf]].forEach(([id, v]) => { if(v && !$(id).value) $(id).value = v; });
+  } catch(e){}
+}
+async function salvarDadosAdmissao(){
+  const val = id => ($(id) ? $(id).value : '').trim();
+  const vt = document.querySelector('input[name=ad-vt]:checked');
+  const p = { nome_completo: val('ad-nome'), nome_social: val('ad-social'), cpf: val('ad-cpf'), data_nascimento: val('ad-nasc'), telefone: val('ad-tel'),
+    rg: val('ad-rg'), pis: val('ad-pis'), escolaridade: val('ad-esc'), estado_civil: val('ad-civil'),
+    endereco: { cep: val('ad-cep'), logradouro: val('ad-rua'), numero: val('ad-num'), complemento: val('ad-comp'), bairro: val('ad-bairro'), cidade: val('ad-cidade'), uf: val('ad-uf') },
+    banco: { banco: val('ad-banco'), agencia: val('ad-ag'), conta: val('ad-conta'), tipo: val('ad-tipo'), pix: val('ad-pix') },
+    vale_transporte: vt ? vt.value === 'true' : null, vt_trajeto: val('ad-vtt'),
+    emergencia: { nome: val('ad-em-nome'), telefone: val('ad-em-tel'), parentesco: val('ad-em-par') },
+    dependentes: [...document.querySelectorAll('#ad-deps .dep')].map(dv => ({ nome: dv.querySelector('.dp-n').value.trim(), parentesco: dv.querySelector('.dp-p').value.trim(),
+      data_nascimento: dv.querySelector('.dp-d').value || null })) };
+  const { data, error } = await db.rpc('fn_rh_admissao_salvar_dados', { p_token: ADMISSAO, p });
+  if(error) return msg('ad-msg', 'Não foi possível salvar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('ad-msg', data.mensagem, 'erro');
+  await telaAdmissao(2);
+  msg('ad-msg', data.mensagem, 'ok');
+}
+async function enviarDocAdmissao(modelo){
+  const arq = $('f-' + modelo).files && $('f-' + modelo).files[0];
+  if(!arq) return msg('fm-' + modelo, 'Escolha o arquivo ou tire a foto.', 'erro');
+  const tipo = arq.type || (/\.pdf$/i.test(arq.name) ? 'application/pdf' : 'image/jpeg');
+  if(arq.size > ADM.doc_max_mb * 1024 * 1024) return msg('fm-' + modelo, `O arquivo passa de ${ADM.doc_max_mb} MB.`, 'erro');
+  msg('fm-' + modelo, 'Enviando…', 'info');
+  try{
+    const { data: e, error: e1 } = await db.functions.invoke('rh-token', { body: { token: ADMISSAO, modelo, nome: arq.name, tamanho: arq.size, tipo } });
+    if(e1 || !e || !e.caminho){ let m = 'Não foi possível enviar agora.'; try { m = (await e1.context.json()).erro || m; } catch(x){} return msg('fm-' + modelo, m, 'erro'); }
+    const { error: e2 } = await db.storage.from('rh-arquivos').uploadToSignedUrl(e.caminho, e.token_envio, arq, { contentType: tipo });
+    if(e2) return msg('fm-' + modelo, 'O envio falhou. Tente de novo.', 'erro');
+    const { data: r } = await db.rpc('fn_rh_admissao_doc_registrar', { p_token: ADMISSAO, p_modelo: modelo, p_path: e.caminho, p_nome: arq.name });
+    if(!r || !r.ok) return msg('fm-' + modelo, (r && r.mensagem) || 'O envio falhou.', 'erro');
+    await telaAdmissao(2);
+    const alvo = $('doc-' + modelo); if(alvo && alvo.scrollIntoView) alvo.scrollIntoView({ block:'center' });
+  }catch(x){ msg('fm-' + modelo, 'O envio falhou. Tente de novo.', 'erro'); }
+}
+async function assinarContrato(){
+  if(!$('as-ok').checked) return msg('as-msg', 'Marque que leu e concorda com o contrato.', 'erro');
+  const traco = PAD && PAD.desenhou() ? PAD.dataURL() : null;
+  const { data, error } = await db.rpc('fn_rh_admissao_assinar', { p_token: ADMISSAO, p_nome: ($('as-nome').value || '').trim(), p_cpf: $('as-cpf').value, p_traco: traco });
+  if(error) return msg('as-msg', 'Não foi possível registrar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('as-msg', data.mensagem + (data.tentativas_restantes != null ? ` Tentativas restantes: ${data.tentativas_restantes}.` : ''), 'erro');
+  await telaAdmissao(3);
+}
+// "Enviar tudo e fechar": se falta algo, mostra o quê e deixa enviar assim mesmo
+async function enviarTudoAdm(mesmoAssim){
+  const { data, error } = await db.rpc('fn_rh_admissao_finalizar', { p_token: ADMISSAO, p_mesmo_assim: !!mesmoAssim });
+  if(error) return msg('env-msg', 'Não foi possível enviar agora. Tente de novo.', 'erro');
+  if(!data.ok){
+    if(!data.faltam) return msg('env-msg', data.mensagem, 'erro');
+    $('env-msg').innerHTML = `<div class="msg msg-aviso">${esc(data.mensagem)}</div>
+      <button class="btn-sec" style="width:100%" onclick="enviarTudoAdm(true)">Enviar assim mesmo (completo depois pelo mesmo link)</button>`;
+    return;
+  }
+  tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Enviado!</h2>
+    <div class="msg msg-ok">${esc(data.mensagem)}</div>
+    <p class="mut">Guarde este link: é por ele que você volta se o RH pedir algum ajuste.</p>
+    <button class="btn" onclick="window.close()">Fechar esta página</button>
+    <p class="mut" id="fechar-dica" style="margin-top:10px">Se a página não fechar, pode fechar a aba do navegador.</p></div>`);
+  try { window.close(); } catch(e){}
+}
+
+// ===================== AVALIAÇÃO DE DESEMPENHO PELO LINK (?avaliar=) — Fase 4A =====================
+// Para quem não tem login (campo). O link abre SÓ esta avaliação; ao enviar, a
+// pessoa confirma CPF ou matrícula. Par e liderado podem marcar "não observei".
+const AVALIAR = (QS.get('avaliar') || '').trim();
+const RESULTADO = (QS.get('resultado') || '').trim();
+const REL_TXT = { auto:'Sua autoavaliação', gestor:'Avaliação de quem você lidera', par:'Avaliação de um colega', liderado:'Avaliação do seu gestor' };
+let AV = null;
+async function telaAvaliar(){
+  const { data, error } = await db.rpc('fn_rh_avaliacao_por_token', { p_token: AVALIAR });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'aberta') return tela(`<div class="card"><h2>Avaliação de desempenho</h2><div class="msg msg-${data.situacao === 'enviada' ? 'ok' : 'aviso'}">${
+    esc({ enviada:'Esta avaliação já foi enviada. Obrigado!', fechada:'O prazo desta avaliação terminou. Fale com o RH.', invalido:'Este link não é válido ou venceu. Peça um novo ao RH.' }[data.situacao] || 'Link indisponível.')}</div></div>`);
+  AV = data.avaliacao;
+  const a = AV, auto = a.relacao === 'auto';
+  tela(`<div class="card"><h2>${esc(REL_TXT[a.relacao] || 'Avaliação')}</h2>
+      <div class="mut">${esc(a.ciclo)} · período de ${fmtData(a.periodo_inicio)} a ${fmtData(a.periodo_fim)} · responda até <b>${fmtData(a.prazo)}</b></div>
+      ${auto ? '' : `<p>Quem você avalia: <b>${esc(a.avaliado)}</b>${a.funcao ? ' · ' + esc(a.funcao) : ''}</p>`}
+      <div class="msg msg-info">Para cada competência, escolha de 1 (bem abaixo do esperado) a 5 (muito acima).${a.pode_nao_observar ? ' Se você não acompanhou aquilo de perto, marque "Não observei" — é melhor que chutar.' : ''}
+        ${a.relacao === 'par' || a.relacao === 'liderado' ? ' <b>Sua resposta é anônima</b>: só aparece somada à de outras pessoas, e só se houver respostas suficientes.' : ''}</div></div>
+    ${a.competencias.map(c => `<div class="card"><h3 style="margin-top:0">${esc(c.nome)}</h3>${c.descricao ? `<div class="mut">${esc(c.descricao)}</div>` : ''}
+      ${c.niveis.length ? `<ul class="ancoras">${c.niveis.map(n => `<li><b>${n.nivel}</b> — ${esc(n.ancora)}</li>`).join('')}</ul>` : ''}
+      <div class="escala" role="radiogroup" aria-label="${esc(c.nome)}">${[1, 2, 3, 4, 5].map(n => `<label><input type="radio" name="n-${c.id}" value="${n}" ${c.nota === n ? 'checked' : ''}> ${n}</label>`).join('')}
+        ${a.pode_nao_observar ? `<label><input type="radio" name="n-${c.id}" value="" ${c.respondida && c.nota === null ? 'checked' : ''}> Não observei</label>` : ''}</div>
+      <label for="c-${c.id}">Comentário (opcional)</label><textarea id="c-${c.id}" rows="2">${esc(c.resposta_comentario || '')}</textarea></div>`).join('')}
+    <div class="card"><label for="av-com">Comentário geral (opcional)</label><textarea id="av-com" rows="3">${esc(a.comentario || '')}</textarea>
+      <label for="av-doc">Seu CPF ou matrícula (para enviar)</label><input id="av-doc" inputmode="numeric" autocomplete="off">
+      <div class="mut">Só para conferir que é você. O número não fica guardado na avaliação.</div>
+      <div id="av-msg"></div>
+      <button class="btn" style="margin-top:12px;width:100%" onclick="salvarAvaliar(true)">Enviar avaliação</button>
+      <button class="btn-sec" style="margin-top:8px;width:100%" onclick="salvarAvaliar(false)">Salvar e continuar depois</button></div>`);
+}
+function respostasAvaliar(){
+  return AV.competencias.map(c => { const r = document.querySelector(`input[name="n-${c.id}"]:checked`);
+    return r ? { competencia_id: c.id, nota: r.value === '' ? null : Number(r.value), comentario: ($('c-' + c.id).value || '').trim() || null } : null; }).filter(Boolean);
+}
+async function salvarAvaliar(enviar){
+  const { data, error } = await db.rpc('fn_rh_avaliacao_salvar_token', { p_token: AVALIAR, p_respostas: respostasAvaliar(),
+    p_comentario: ($('av-com').value || '').trim() || null, p_enviar: enviar, p_doc: enviar ? $('av-doc').value : null });
+  if(error) return msg('av-msg', 'Não foi possível salvar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('av-msg', data.mensagem, 'erro');
+  if(data.status === 'enviada') return tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Avaliação enviada</h2>
+    <div class="msg msg-ok">${esc(data.mensagem)}</div><p class="mut">Pode fechar esta página.</p></div>`);
+  msg('av-msg', data.mensagem, 'ok');
+}
+
+// ===================== RESULTADO DA AVALIAÇÃO E CIÊNCIA (?resultado=) =====================
+// Ciência não é concordância: o comentário da pessoa entra junto no registro (e no hash).
+async function telaResultado(){
+  const { data, error } = await db.rpc('fn_rh_ciencia_por_token', { p_token: RESULTADO });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'aberta') return tela(`<div class="card"><h2>Resultado da avaliação</h2><div class="msg msg-${data.situacao === 'ja_registrada' ? 'ok' : 'aviso'}">${
+    esc(data.situacao === 'ja_registrada' ? 'Sua ciência já foi registrada. Obrigado!' : 'Este link não é válido ou venceu. Peça um novo ao RH.')}</div></div>`);
+  const c = data.resultado, r = c.resultado || {}, n = x => x === null || x === undefined ? '—' : Number(x).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  tela(`<div class="card"><h2>Resultado da sua avaliação</h2><div class="mut">${esc(c.ciclo)} · período de ${fmtData(c.periodo_inicio)} a ${fmtData(c.periodo_fim)}${c.gestor ? ' · gestor: ' + esc(c.gestor) : ''}</div>
+      <div style="margin-top:10px">Desempenho: <span class="nota-grande">${n(r.desempenho_final)}</span> <span class="mut">de 5</span></div>
+      ${r.calibrado ? '<div class="mut">Ajustado na calibração da empresa (comitê).</div>' : ''}
+      <div class="mut">Autoavaliação ${n(r.nota_auto)} · gestor ${n(r.nota_gestor)}${r.pares_situacao !== 'sem' ? ' · colegas ' + (r.pares_situacao === 'ok' ? n(r.nota_pares) : 'respostas insuficientes') : ''}${r.n_metas ? ' · metas ' + n(r.nota_metas) : ''}</div></div>
+    <div class="card"><h3>Por competência</h3>${(r.competencias || []).map(k => `<div class="campo"><b>${esc(k.nome)}</b> <span class="mut">(esperado: ${k.alvo ?? '—'})</span>
+        <div class="mut">você ${k.auto ?? '—'} · gestor ${k.gestor ?? '—'}${k.pares != null ? ' · colegas ' + n(k.pares) : ''}</div>${k.comentario_gestor ? `<div>${esc(k.comentario_gestor)}</div>` : ''}</div>`).join('')}
+      ${c.comentario_gestor ? `<div class="secao">Comentário do gestor</div><div class="campo">${esc(c.comentario_gestor)}</div>` : ''}
+      ${(c.metas || []).length ? `<div class="secao">Metas</div>${c.metas.map(m => `<div class="campo">${esc(m.titulo)}: meta ${m.meta}${m.unidade ? ' ' + esc(m.unidade) : ''}, realizado ${m.realizado ?? '—'} — <b>${m.atingimento ?? '—'}%</b></div>`).join('')}` : ''}
+      <p class="mut" style="word-break:break-all">Código deste conteúdo (SHA-256): ${esc(c.conteudo_hash)}</p></div>
+    <div class="card"><h3>Registrar ciência</h3>
+      <div class="msg msg-info">Registrar ciência confirma que você <b>leu</b> o resultado — não que concorda com tudo. Se quiser, escreva sua opinião: ela fica junto do registro.</div>
+      <label for="ci-nome">Seu nome completo</label><input id="ci-nome" autocomplete="name">
+      <label for="ci-doc">CPF ou matrícula</label><input id="ci-doc" inputmode="numeric" autocomplete="off">
+      <label for="ci-com">Comentário (opcional)</label><textarea id="ci-com"></textarea>
+      <label>Assine no quadro, com o dedo ou o mouse</label><canvas id="pad" aria-label="Quadro de assinatura"></canvas>
+      <button class="btn-sec" style="margin-top:6px" onclick="PAD && PAD.limpar()">Limpar o quadro</button>
+      <div id="ci-msg"></div><button class="btn" style="margin-top:12px;width:100%" onclick="darCiencia()">Registrar ciência</button></div>`);
+  PAD = montarPad($('pad'));
+}
+async function darCiencia(){
+  const { data, error } = await db.rpc('fn_rh_ciencia_assinar_token', { p_token: RESULTADO, p_nome: ($('ci-nome').value || '').trim(), p_doc: $('ci-doc').value,
+    p_comentario: ($('ci-com').value || '').trim() || null, p_traco: PAD && PAD.desenhou() ? PAD.dataURL() : null });
+  if(error) return msg('ci-msg', 'Não foi possível registrar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('ci-msg', data.mensagem, 'erro');
+  tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Ciência registrada</h2><div class="msg msg-ok">${esc(data.mensagem)}</div></div>`);
+}
+
+// ===================== ACORDO DO PDI (?pdi=) — Fase 4B =====================
+// A pessoa lê o plano CONGELADO e assina com nome + CPF ou matrícula. O comentário fica junto (e no código do documento).
+const PDI = (QS.get('pdi') || '').trim();
+const TIPO_ACAO = { pratica:'Prática no trabalho', mentoria:'Troca / mentoria', curso:'Curso / estudo' };
+async function telaPdi(){
+  const { data, error } = await db.rpc('fn_rh_pdi_por_token', { p_token: PDI });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'pendente') return tela(`<div class="card"><h2>Plano de desenvolvimento</h2><div class="msg msg-${data.situacao === 'ja_assinado' ? 'ok' : 'aviso'}">${
+    esc({ ja_assinado:'Sua assinatura já foi registrada. Obrigado!', indisponivel:'Este PDI não está esperando assinatura. Fale com o seu gestor.', invalido:'Este link não é válido ou venceu. Peça um novo ao RH.' }[data.situacao] || 'Link indisponível.')}</div></div>`);
+  const c = data.conteudo;
+  tela(`<div class="card"><h2>Seu Plano de Desenvolvimento (PDI)</h2><div class="mut">${esc(c.titulo)} · com ${esc(c.gestor)} · ${fmtData(c.inicio)} a ${fmtData(c.fim)}</div>
+      ${c.objetivo ? `<p><b>Objetivo:</b> ${esc(c.objetivo)}</p>` : ''}</div>
+    <div class="card"><h3 style="margin-top:0">Ações combinadas</h3>${c.acoes.map(a => `<div class="campo"><b>${esc(a.titulo)}</b>${a.descricao ? `<div>${esc(a.descricao)}</div>` : ''}
+        <div class="mut">${esc(TIPO_ACAO[a.tipo] || a.tipo)}${a.competencia ? ' · ' + esc(a.competencia) : ''} · ${a.responsavel === 'gestor' ? 'o gestor faz' : 'você faz'} · até ${fmtData(a.prazo)}</div></div>`).join('')}
+      <p class="mut" style="word-break:break-all">Código deste conteúdo (SHA-256): ${esc(data.conteudo_hash)}</p></div>
+    <div class="card"><h3>Assinar o acordo</h3>
+      <div class="msg msg-info">Assinar confirma que você <b>combinou</b> este plano com o seu gestor. Se quiser, escreva um comentário: ele fica junto do registro.</div>
+      <label for="pdi-nome">Seu nome completo</label><input id="pdi-nome" autocomplete="name">
+      <label for="pdi-doc">CPF ou matrícula</label><input id="pdi-doc" inputmode="numeric" autocomplete="off">
+      <label for="pdi-com">Comentário (opcional)</label><textarea id="pdi-com"></textarea>
+      <label>Assine no quadro, com o dedo ou o mouse</label><canvas id="pad" aria-label="Quadro de assinatura"></canvas>
+      <button class="btn-sec" style="margin-top:6px" onclick="PAD && PAD.limpar()">Limpar o quadro</button>
+      <div id="pdi-msg"></div><button class="btn" style="margin-top:12px;width:100%" onclick="assinarPdi()">Assinar o acordo</button></div>`);
+  PAD = montarPad($('pad'));
+}
+async function assinarPdi(){
+  const { data, error } = await db.rpc('fn_rh_pdi_assinar_token', { p_token: PDI, p_nome: ($('pdi-nome').value || '').trim(), p_doc: $('pdi-doc').value,
+    p_comentario: ($('pdi-com').value || '').trim() || null, p_traco: PAD && PAD.desenhou() ? PAD.dataURL() : null });
+  if(error) return msg('pdi-msg', 'Não foi possível registrar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('pdi-msg', data.mensagem, 'erro');
+  tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Acordo assinado</h2><div class="msg msg-ok">${esc(data.mensagem)}</div></div>`);
+}
+
+// ===================== PESQUISA DE CLIMA (?pesquisa=) — Fase 4D =====================
+// Anônima: o link só serve para saber que ESTA pessoa pode responder uma vez; a resposta
+// é gravada sem nenhum dado dela (nem o link). Não pede nome, CPF nem matrícula.
+const PESQUISA = (QS.get('pesquisa') || '').trim();
+let PQ = null;
+async function telaPesquisa(){
+  const { data, error } = await db.rpc('fn_rh_pesquisa_por_token', { p_token: PESQUISA });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'aberta') return tela(`<div class="card"><h2>Pesquisa</h2><div class="msg msg-${data.situacao === 'respondida' ? 'ok' : 'aviso'}">${
+    esc({ respondida:'Você já respondeu esta pesquisa. Obrigado!', fechada:'Esta pesquisa já foi encerrada.', invalido:'Este link não é válido ou venceu.' }[data.situacao] || 'Link indisponível.')}</div></div>`);
+  PQ = data.pesquisa; let dim = null;
+  tela(`<div class="card"><h2>${esc(PQ.titulo)}</h2><div class="msg msg-info">${esc(PQ.instrucoes || '')} <b>Sua resposta é anônima</b>: é guardada sem o seu nome,
+      e o resultado só aparece somado, com pelo menos ${PQ.min_respostas} respostas. Aberta até ${fmtData(PQ.fim)}.</div></div>
+    ${PQ.perguntas.map(q => { const cab = q.dimensao !== dim ? `<div class="secao" style="margin:14px 0 6px">${esc(q.dimensao)}</div>` : ''; dim = q.dimensao;
+      const op = n => `<label><input type="radio" name="q-${q.id}" value="${n}"> ${n}</label>`;
+      return cab + `<div class="card"><div style="margin-bottom:6px">${esc(q.texto)}</div>${q.tipo === 'escala' ? `<div class="escala">${[1, 2, 3, 4, 5].map(op).join('')}</div><div class="mut">1 = discordo totalmente · 5 = concordo totalmente</div>`
+        : q.tipo === 'enps' ? `<div class="escala">${Array.from({ length: 11 }, (_, n) => op(n)).join('')}</div><div class="mut">0 = de jeito nenhum · 10 = com certeza</div>`
+        : `<textarea id="t-${q.id}" rows="3" maxlength="2000" placeholder="opcional — evite citar nomes"></textarea>`}</div>`; }).join('')}
+    <div class="card"><div id="pq-msg"></div><button class="btn" style="width:100%" onclick="enviarPesquisaLink()">Enviar (anônimo)</button></div>`);
+}
+async function enviarPesquisaLink(){
+  const r = {};
+  PQ.perguntas.forEach(q => { if(q.tipo === 'texto'){ const t = ($('t-' + q.id).value || '').trim(); if(t) r[q.id] = t; }
+    else { const x = document.querySelector(`input[name="q-${q.id}"]:checked`); if(x) r[q.id] = Number(x.value); } });
+  const { data, error } = await db.rpc('fn_rh_pesquisa_responder_token', { p_token: PESQUISA, p_respostas: r });
+  if(error) return msg('pq-msg', 'Não foi possível enviar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('pq-msg', data.mensagem, 'erro');
+  tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Obrigado!</h2><div class="msg msg-ok">${esc(data.mensagem)}</div></div>`);
+}
+
+// ===================== QUESTIONÁRIO DE ONBOARDING / DESLIGAMENTO (?questionario=) — Fase 6A =====================
+// Identificado e confidencial ao RH (o gestor não lê) — a página diz isso antes das perguntas.
+const QUESTIONARIO = (QS.get('questionario') || '').trim();
+let QQ = null;
+async function telaQuestionario(){
+  const { data, error } = await db.rpc('fn_rh_questionario_por_token', { p_token: QUESTIONARIO });
+  if(error) return tela(`<div class="card"><div class="msg msg-erro">Não foi possível abrir agora. Tente de novo em alguns minutos.</div></div>`);
+  if(data.situacao !== 'aberto') return tela(`<div class="card"><div class="msg msg-${data.situacao === 'respondido' ? 'ok' : 'aviso'}">${
+    esc(data.situacao === 'respondido' ? 'Você já respondeu. Obrigado!' : 'Este link não é válido ou venceu. Peça um novo ao RH.')}</div></div>`);
+  QQ = data;
+  const desl = data.tipo === 'desligamento';
+  tela(`<div class="card"><h2>${desl ? 'Entrevista de desligamento' : 'Como estão os seus primeiros dias?'}</h2>
+      <p>Olá, ${esc(data.nome)}! ${desl ? 'Queremos entender a sua saída para melhorar a Ambimet.' : 'Queremos saber como está sendo a sua chegada à Ambimet.'}</p>
+      <div class="msg msg-info">Este questionário é <b>identificado</b> e <b>só o RH lê</b> — o seu gestor não vê as respostas.</div></div>
+    ${data.perguntas.map(p => `<div class="card"><div style="margin-bottom:6px">${esc(p.texto)}${p.obrigatoria ? '' : ' <span class="mut">(opcional)</span>'}</div>
+      ${p.resposta === 'escala' ? `<div class="escala">${[1, 2, 3, 4, 5].map(n => `<label><input type="radio" name="q-${p.ordem}" value="${n}"> ${n}</label>`).join('')}</div><div class="mut">1 = discordo totalmente · 5 = concordo totalmente</div>`
+        : p.resposta === 'sim_nao' ? `<div class="escala"><label><input type="radio" name="q-${p.ordem}" value="sim"> Sim</label><label><input type="radio" name="q-${p.ordem}" value="nao"> Não</label></div>`
+        : `<textarea id="q-${p.ordem}" rows="3" maxlength="2000"></textarea>`}</div>`).join('')}
+    <div class="card"><div id="qq-msg"></div><button class="btn" style="width:100%" onclick="enviarQuestionarioLink()">Enviar</button></div>`);
+}
+async function enviarQuestionarioLink(){
+  const r = {};
+  QQ.perguntas.forEach(p => { if(p.resposta === 'texto'){ const t = ($('q-' + p.ordem).value || '').trim(); if(t) r[p.ordem] = t; }
+    else { const x = document.querySelector(`input[name="q-${p.ordem}"]:checked`); if(x) r[p.ordem] = p.resposta === 'escala' ? Number(x.value) : x.value; } });
+  const { data, error } = await db.rpc('fn_rh_questionario_responder_token', { p_token: QUESTIONARIO, p_respostas: r });
+  if(error) return msg('qq-msg', 'Não foi possível enviar agora. Tente de novo.', 'erro');
+  if(!data.ok) return msg('qq-msg', data.mensagem, 'erro');
+  tela(`<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>Obrigado!</h2><div class="msg msg-ok">${esc(data.mensagem)}</div></div>`);
+}
+
+// ===================== INÍCIO =====================
+(function(){
+  $('versao').textContent = VERSAO;
+  // página com token (assinar, acompanhar, prova, perfil, proposta) nunca vai para o buscador
+  if(TOKEN || ACOMP || PROVA || PERFIL || PROPOSTA || ADMISSAO || AVALIAR || RESULTADO || PDI || PESQUISA || QUESTIONARIO){ const m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex, nofollow'; document.head.appendChild(m); }
+  if(TOKEN) return telaAssinar();
+  if(ACOMP) return telaAcompanhar();
+  if(PROVA) return telaProva();
+  if(PERFIL) return telaPerfil();
+  if(PROPOSTA) return telaProposta();
+  if(ADMISSAO) return telaAdmissao();
+  if(AVALIAR) return telaAvaliar();
+  if(RESULTADO) return telaResultado();
+  if(PDI) return telaPdi();
+  if(PESQUISA) return telaPesquisa();
+  if(QUESTIONARIO) return telaQuestionario();
+  if(VAGA) return telaVaga();
+  telaLista();
+})();
+</script><div style="position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#B45309;color:#fff;font:600 12px/1.4 system-ui,sans-serif;text-align:center;padding:3px 8px">HOMOLOGAÇÃO — pessoas e dados fictícios. Nada aqui vale como registro oficial.</div>
+</body></html>
